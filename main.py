@@ -99,8 +99,19 @@ class tetron:
         for block in self.all_blocks:
             block.move_horizontal(direction)
         
+        self.screen_constraint()
+        
         self.x += direction * TILE_SCALE
     
+    def screen_constraint(self):
+        for block in self.block_list:
+            if block.x == WINDOW_SCALE[0]:
+                self.move_horizontal(-1)
+                break
+            if block.x < 0:
+                self.move_horizontal(1)
+                break
+            
     def rotate(self):
 
         # check if rotation will clip
@@ -108,11 +119,13 @@ class tetron:
             for j in range(LEN):
                 # block is on and is out of left screen bounds
                 if self.x + ((j + 1) * BLOCK_SCALE) <= 0 and self.represent_matrix[i][j]:
+                    # return from corner
                     self.x += BLOCK_SCALE
                     print('move')
                     break
                 # block is on and is out of right screen bounds
                 if self.x + ((j + 1) * BLOCK_SCALE) >= WINDOW_SCALE[0] and self.represent_matrix[i][j]:
+                    # return from corner
                     self.x -= BLOCK_SCALE
                     print('move')
                     break
