@@ -14,7 +14,7 @@ WHITE = (255,255,255)
 
 screen = pygame.display.set_mode(WINDOW_SCALE)
 
-class block(pygame.sprite.Sprite):
+class Block(pygame.sprite.Sprite):
     def __init__(self, color, ghost = False):
         self.x = 0
         self.y = 0
@@ -27,7 +27,6 @@ class block(pygame.sprite.Sprite):
         else:
             self.color = color
 
-        print(self.color)
         self.ghost = ghost
 
         self.rect = pygame.Rect(self.x, self.y, self.width, self.hight)
@@ -42,13 +41,17 @@ class block(pygame.sprite.Sprite):
     def draw(self):
         self.rect = pygame.Rect(self.x, self.y, self.width, self.hight)
         draw.rect(screen, self.color, self.rect)
+    
+    def position_overlap(self, other_down):
+        return self.x == other_down.x and self.y == other_down.y - TILE_SCALE
 
-class tetron:
-    def __init__(self, represent_matrix : list[list], color : tuple, blocks):
+
+class Tetron:
+    def __init__(self, represent_matrix : list[list], color : tuple):
         self.represent_matrix = represent_matrix
-        self.block_list : list[block] = []
-        self.ghost_list : list[block] = []
-        self.all_blocks : list[block] = []
+        self.block_list : list[Block] = []
+        self.ghost_list : list[Block] = []
+        self.all_blocks : list[Block] = []
 
         self.move_delay_frames = FPS
         self.move_delay_frames_timer_y = FPS
@@ -63,7 +66,7 @@ class tetron:
 
                 # create a ghost block if bit is 0 (just for testing)
                 is_ghost = not bool(self.represent_matrix[i][j])
-                my_block = block(color, is_ghost)
+                my_block = Block(color, is_ghost)
 
                 my_block.x = self.x + (j * TILE_SCALE)
                 my_block.y = self.y + (i * TILE_SCALE)
@@ -105,29 +108,40 @@ class tetron:
     
     def screen_constraint(self):
         for block in self.block_list:
-            if block.x == WINDOW_SCALE[0]:
+            if block.x >= WINDOW_SCALE[0]:
                 self.move_horizontal(-1)
                 break
             if block.x < 0:
                 self.move_horizontal(1)
                 break
-            
+
+    def check_vertical_collsion(self, blocks : list[Block]):
+
+        # collision with blocks 
+        for block in blocks:
+            for my_block in self.block_list:
+                if my_block.position_overlap(block):
+                    return True
+        
+        # collision with screen
+        for my_block in self.block_list:
+                if my_block.y == 480:
+                    return True
+                
     def rotate(self):
 
         # check if rotation will clip
         for i in range(LEN):
             for j in range(LEN):
                 # block is on and is out of left screen bounds
-                if self.x + ((j + 1) * BLOCK_SCALE) <= 0 and self.represent_matrix[i][j]:
+                if self.x + ((j + 1) * TILE_SCALE) <= 0 and self.represent_matrix[i][j]:
                     # return from corner
-                    self.x += BLOCK_SCALE
-                    print('move')
+                    self.move_horizontal(1)
                     break
                 # block is on and is out of right screen bounds
-                if self.x + ((j + 1) * BLOCK_SCALE) >= WINDOW_SCALE[0] and self.represent_matrix[i][j]:
+                if self.x + ((j + 1) * TILE_SCALE) >= WINDOW_SCALE[0] and self.represent_matrix[i][j]:
                     # return from corner
-                    self.x -= BLOCK_SCALE
-                    print('move')
+                    self.move_horizontal(-1)
                     break
 
         represent_matrix_temp = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
@@ -140,8 +154,6 @@ class tetron:
         block_index = 0
         ghost_index = 0
 
-        
-
         for i in range(LEN):
             for j in range(LEN):
                 if self.represent_matrix[i][j]:
@@ -152,23 +164,42 @@ class tetron:
                     self.ghost_list[ghost_index].x = self.x + (i * TILE_SCALE)
                     self.ghost_list[ghost_index].y = self.y + (j * TILE_SCALE)
                     ghost_index += 1
-         
+                 
+
+class Grid:
+    def __init__(self):
+        self.currentTetron = Tetron_L()
+        self.blocks : list[Block] = []
+    
+    def updateGrid(self):
+        self.currentTetron.move_down()
         
+        if self.currentTetron.check_vertical_collsion(self.blocks):
+            self.placeTetron()
         
+        update(self.currentTetron, self.blocks)
+
+    def placeTetron(self):
+        self.blocks.extend(self.currentTetron.block_list.copy())
+        del self.currentTetron
+        self.currentTetron = Tetron_L()
 
 
-class tetron_L(tetron):
-    def __init__(self, blocks):
+class Tetron_L(Tetron):
+    def __init__(self):
         represent_matrix = [[0,0,0,0], [0,1,0,0], [0,1,1,1], [0,0,0,0]]
         color = (52,195,235)
-        super().__init__(represent_matrix, color, blocks)
+        super().__init__(represent_matrix, color)
                     
 
-def update(tetron : tetron):
+def update(tetron : Tetron, blocks: list[Block]):
     screen.fill((0, 0, 0))
 
     tetron.move_down()
     tetron.draw()
+
+    for block in blocks:
+        block.draw()
 
     pygame.display.update()
 
@@ -179,14 +210,11 @@ def main():
     run = True
 
     clock = pygame.time.Clock()
-    
-    blocks : list[block] = []
-    b = block((5,255,210))
-    t = tetron_L(blocks)
-    
+    grid = Grid()
+
     while run:
-        update(t)
         clock.tick(FPS)
+        grid.updateGrid()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -194,11 +222,11 @@ def main():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RIGHT:
-                    t.move_horizontal(1)
+                    grid.currentTetron.move_horizontal(1)
                 if event.key == pygame.K_LEFT:
-                    t.move_horizontal(-1)
+                    grid.currentTetron.move_horizontal(-1)
                 if event.key == pygame.K_DOWN:
-                    t.rotate()
+                    grid.currentTetron.rotate()
     pygame.quit()
 
 
