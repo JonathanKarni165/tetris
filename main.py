@@ -1,5 +1,6 @@
 import pygame
 from pygame import draw
+from random import randint
 
 WINDOW_SCALE = (300, 500)
 TILE_SCALE = 20
@@ -134,12 +135,12 @@ class Tetron:
         for i in range(LEN):
             for j in range(LEN):
                 # block is on and is out of left screen bounds
-                if self.x + ((j + 1) * TILE_SCALE) <= 0 and self.represent_matrix[i][j]:
+                if self.x + ((j + 1) * BLOCK_SCALE) <= 0 and self.represent_matrix[i][j]:
                     # return from corner
                     self.move_horizontal(1)
                     break
                 # block is on and is out of right screen bounds
-                if self.x + ((j + 1) * TILE_SCALE) >= WINDOW_SCALE[0] and self.represent_matrix[i][j]:
+                if self.x + ((j + 1) * BLOCK_SCALE) >= WINDOW_SCALE[0] and self.represent_matrix[i][j]:
                     # return from corner
                     self.move_horizontal(-1)
                     break
@@ -182,7 +183,9 @@ class Grid:
     def placeTetron(self):
         self.blocks.extend(self.currentTetron.block_list.copy())
         del self.currentTetron
-        self.currentTetron = Tetron_L()
+        
+        type_list = [Tetron_L, Tetron_T, Tetron_I, Tetron_O, Tetron_X]        
+        self.currentTetron = type_list[randint(0,4)]()
 
 
 class Tetron_L(Tetron):
@@ -190,8 +193,31 @@ class Tetron_L(Tetron):
         represent_matrix = [[0,0,0,0], [0,1,0,0], [0,1,1,1], [0,0,0,0]]
         color = (52,195,235)
         super().__init__(represent_matrix, color)
-                    
 
+class Tetron_T(Tetron):
+    def __init__(self):
+        represent_matrix = [[0,0,0,0], [0,1,0,0], [1,1,1,0], [0,0,0,0]]
+        color = (235, 52, 229)
+        super().__init__(represent_matrix, color)
+
+class Tetron_O(Tetron):
+    def __init__(self):
+        represent_matrix = [[0,0,0,0], [0,1,1,0], [0,1,1,0], [0,0,0,0]]
+        color = (235, 64, 52)
+        super().__init__(represent_matrix, color)
+
+class Tetron_I(Tetron):
+    def __init__(self):
+        represent_matrix = [[0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0]]
+        color = (95, 235, 52)
+        super().__init__(represent_matrix, color)
+
+class Tetron_X(Tetron):
+    def __init__(self):
+        represent_matrix = [[0,0,0,0], [0,1,1,0], [0,0,1,1], [0,0,0,0]]
+        color = (230, 215, 55)
+        super().__init__(represent_matrix, color)
+                    
 def update(tetron : Tetron, blocks: list[Block]):
     screen.fill((0, 0, 0))
 
