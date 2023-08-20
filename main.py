@@ -8,10 +8,10 @@ BLOCK_SCALE = 18
 
 FPS = 60
 HORIZONTAL_SPEED = 1
-VERTICAL_SPEED = 1
+VERTICAL_SPEED = 2
 LEN = 4
 
-WHITE = (255,255,255)
+WHITE = (0,0,0)
 
 screen = pygame.display.set_mode(WINDOW_SCALE)
 
@@ -82,7 +82,6 @@ class Tetron:
         self.all_blocks.extend(self.ghost_list)
     
     def draw(self):
-        print(self.x)
         for block in self.all_blocks:
             block.draw()
          
@@ -165,27 +164,78 @@ class Tetron:
                     self.ghost_list[ghost_index].x = self.x + (i * TILE_SCALE)
                     self.ghost_list[ghost_index].y = self.y + (j * TILE_SCALE)
                     ghost_index += 1
-                 
+          
+class Block_Stack:
+    def __init__(self):
+        self.stack : list[list[Block]] = []
+    
+    def add_block(self, block : Block):
+        block_level = (WINDOW_SCALE[1] - block.y) // TILE_SCALE - 1
+        print(block_level, ' ')
+
+        while len(self.stack) < block_level + 1:
+            self.stack.append([])
+        self.stack[block_level].append(block)
+    
+    def clear_line(self, level_index : int):
+        # drop down all upper levels
+        for upper_level_index in range(level_index + 1, len(self.stack)):
+            for block in self.stack[upper_level_index]:
+                block.move_down()
+        
+        self.stack.pop(level_index)
+
+    def check_for_clears(self):
+        for i in range(len(self.stack)):
+            self.check_for_clear()
+
+    def check_for_clear(self):
+        row_len_list = []
+        for level_index in range(len(self.stack)):
+            row_len_list.append(len(self.stack[level_index]))
+            if len(self.stack[level_index]) == WINDOW_SCALE[0] // TILE_SCALE:
+                print('line clear ', level_index)
+                self.clear_line(level_index)
+                return
+        print(row_len_list)
+    
+    def get_block_list(self):
+        block_list = []
+        for row in self.stack:
+            for block in row:
+                block_list.append(block)
+        return block_list
 
 class Grid:
     def __init__(self):
         self.currentTetron = Tetron_L()
-        self.blocks : list[Block] = []
+        self.block_stack : Block_Stack = Block_Stack()
     
-    def updateGrid(self):
+    def update_grid(self):
         self.currentTetron.move_down()
         
-        if self.currentTetron.check_vertical_collsion(self.blocks):
-            self.placeTetron()
+        if self.currentTetron.check_vertical_collsion(self.block_stack.get_block_list()):
+            self.place_tetron()
         
-        update(self.currentTetron, self.blocks)
+        update(self.currentTetron, self.block_stack.get_block_list())
 
-    def placeTetron(self):
-        self.blocks.extend(self.currentTetron.block_list.copy())
+    def instantiate_new_tetron(self):
+        type_list = [Tetron_L, Tetron_T, Tetron_I, Tetron_O, Tetron_X, Tetron_Y]        
+        self.currentTetron = type_list[randint(2,2)]()
+
+    def place_tetron(self):
+        # save last tetron as placed block
+        tetron_blocks = self.currentTetron.block_list.copy()
+        for block in tetron_blocks:
+            self.block_stack.add_block(block)
         del self.currentTetron
-        
-        type_list = [Tetron_L, Tetron_T, Tetron_I, Tetron_O, Tetron_X]        
-        self.currentTetron = type_list[randint(0,4)]()
+
+        self.instantiate_new_tetron()
+        self.block_stack.check_for_clears()
+
+        # increase game speed
+        global VERTICAL_SPEED
+        # VERTICAL_SPEED *= 1.1
 
 
 class Tetron_L(Tetron):
@@ -217,6 +267,12 @@ class Tetron_X(Tetron):
         represent_matrix = [[0,0,0,0], [0,1,1,0], [0,0,1,1], [0,0,0,0]]
         color = (230, 215, 55)
         super().__init__(represent_matrix, color)
+
+class Tetron_Y(Tetron):
+    def __init__(self):
+        represent_matrix = [[0,0,0,0], [1,1,1,0], [0,0,1,0], [0,0,1,0]]
+        color = (230, 215, 55)
+        super().__init__(represent_matrix, color)
                     
 def update(tetron : Tetron, blocks: list[Block]):
     screen.fill((0, 0, 0))
@@ -237,10 +293,13 @@ def main():
 
     clock = pygame.time.Clock()
     grid = Grid()
+    pause = False
 
     while run:
         clock.tick(FPS)
-        grid.updateGrid()
+
+        if not pause:
+            grid.update_grid()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -253,6 +312,11 @@ def main():
                     grid.currentTetron.move_horizontal(-1)
                 if event.key == pygame.K_DOWN:
                     grid.currentTetron.rotate()
+                if event.key == pygame.K_ESCAPE:
+                    pause = not pause
+            
+
+
     pygame.quit()
 
 
