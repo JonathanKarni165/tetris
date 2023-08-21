@@ -197,15 +197,15 @@ class Block_Stack:
         self.stack[block_level].append(block)
     
     def clear_line(self):
-        level_index = self.rows_to_clear.pop()
+        row_index = self.rows_to_clear.pop()
         sleep(0.3)
         
         # drop down all upper levels
-        for upper_level_index in range(level_index + 1, len(self.stack)):
-            for block in self.stack[upper_level_index]:
+        for upper_row_index in range(row_index + 1, len(self.stack)):
+            for block in self.stack[upper_row_index]:
                 block.move_down()
         
-        self.stack.pop(level_index)
+        self.stack.pop(row_index)
     
     # returns number of clears
     def check_for_clear(self):
