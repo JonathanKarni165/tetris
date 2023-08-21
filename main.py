@@ -211,13 +211,13 @@ class Block_Stack:
     def check_for_clear(self):
         clear_count = 0
         row_len_list = []
-        for level_index in range(len(self.stack)):
-            row_len_list.append(len(self.stack[level_index]))
-            if len(self.stack[level_index]) == WINDOW_SCALE[0] // TILE_SCALE:
-                print('line clear ', level_index)
-                self.rows_to_clear.append(level_index)
+        for row_index in range(len(self.stack)):
+            row_len_list.append(len(self.stack[row_index]))
+            if len(self.stack[row_index]) == WINDOW_SCALE[0] // TILE_SCALE:
+                print('line clear ', row_index)
+                self.rows_to_clear.append(row_index)
 
-                for block in self.stack[level_index]:
+                for block in self.stack[row_index]:
                     block.color = WHITE
 
                 clear_count += 1
