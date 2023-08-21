@@ -105,21 +105,28 @@ class Tetron:
     
         self.y += TILE_SCALE
 
-    def move_horizontal(self, direction, grid_blocks = None):
+    def move_horizontal(self, direction, grid_blocks = None, no_check = False):
         for block in self.all_blocks:
             block.move_horizontal(direction)
         
-        self.screen_constraint(direction)
+        self.x += direction * TILE_SCALE
+        print('move', direction)
+        if no_check:
+            return
+        
+        self.screen_constraint()
         if grid_blocks is not None:
             self.grid_constraint(direction, grid_blocks)
 
-        self.x += direction * TILE_SCALE
     
     # moves back tetron if collided with wall
-    def screen_constraint(self, direction):
+    def screen_constraint(self):
         for block in self.block_list:
-            if block.x >= WINDOW_SCALE[0] or block.x < 0:
-                self.move_horizontal(-direction)
+            if block.x >= WINDOW_SCALE[0]:
+                self.move_horizontal(-1)
+                return
+            elif block.x < 0:
+                self.move_horizontal(1)
                 return
 
     # moves back tetron if collided with grid
@@ -145,20 +152,6 @@ class Tetron:
                     return True
                 
     def rotate(self):
-        # check if rotation will clip
-        for i in range(LEN):
-            for j in range(LEN):
-                # block is on and is out of left screen bounds
-                if self.x + ((j + 1) * TILE_SCALE) <= 0 and self.represent_matrix[i][j]:
-                    # return from corner
-                    self.move_horizontal(1)
-                    break
-                # block is on and is out of right screen bounds
-                if self.x + ((j + 1) * TILE_SCALE) >= WINDOW_SCALE[0] and self.represent_matrix[i][j]:
-                    # return from corner
-                    self.move_horizontal(-1)
-                    break
-
         represent_matrix_temp = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
         for i in range(LEN):
             for j in range(LEN):
@@ -179,6 +172,8 @@ class Tetron:
                     self.ghost_list[ghost_index].x = self.x + (i * TILE_SCALE)
                     self.ghost_list[ghost_index].y = self.y + (j * TILE_SCALE)
                     ghost_index += 1
+        self.screen_constraint()
+
           
 class Block_Stack:
     def __init__(self):
