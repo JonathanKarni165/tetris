@@ -1,6 +1,8 @@
 import pygame
+from time import sleep
 from pygame import draw
 from random import randint
+
 
 WINDOW_SCALE = (300, 500)
 TILE_SCALE = 20
@@ -11,7 +13,9 @@ HORIZONTAL_SPEED = 1
 VERTICAL_SPEED = 2
 LEN = 4
 
-WHITE = (0,0,0)
+WHITE = (255,255,255)
+BLACK = (0,0,0)
+
 
 screen = pygame.display.set_mode(WINDOW_SCALE)
 
@@ -24,7 +28,7 @@ class Block(pygame.sprite.Sprite):
         self.hight = BLOCK_SCALE
 
         if ghost:
-            self.color = WHITE
+            self.color = BLACK
         else:
             self.color = color
 
@@ -80,6 +84,9 @@ class Tetron:
         
         self.all_blocks.extend(self.block_list)
         self.all_blocks.extend(self.ghost_list)
+
+        # first rotation initialization
+        self.rotate()
     
     def draw(self):
         for block in self.all_blocks:
@@ -98,22 +105,31 @@ class Tetron:
     
         self.y += TILE_SCALE
 
-    def move_horizontal(self, direction):
+    def move_horizontal(self, direction, grid_blocks = None):
         for block in self.all_blocks:
             block.move_horizontal(direction)
         
-        self.screen_constraint()
-        
+        self.screen_constraint(direction)
+        if grid_blocks is not None:
+            self.grid_constraint(direction, grid_blocks)
+
         self.x += direction * TILE_SCALE
     
-    def screen_constraint(self):
+    # moves back tetron if collided with wall
+    def screen_constraint(self, direction):
         for block in self.block_list:
-            if block.x >= WINDOW_SCALE[0]:
-                self.move_horizontal(-1)
-                break
-            if block.x < 0:
-                self.move_horizontal(1)
-                break
+            if block.x >= WINDOW_SCALE[0] or block.x < 0:
+                self.move_horizontal(-direction)
+                return
+
+    # moves back tetron if collided with grid
+    def grid_constraint(self, direction, grid_blocks):
+        for my_block in self.block_list:
+            for grid_block in grid_blocks:
+                if my_block.position_overlap(grid_block):
+                    self.move_horizontal(-direction, grid_blocks)
+                    return
+                
 
     def check_vertical_collsion(self, blocks : list[Block]):
 
@@ -129,17 +145,16 @@ class Tetron:
                     return True
                 
     def rotate(self):
-
         # check if rotation will clip
         for i in range(LEN):
             for j in range(LEN):
                 # block is on and is out of left screen bounds
-                if self.x + ((j + 1) * BLOCK_SCALE) <= 0 and self.represent_matrix[i][j]:
+                if self.x + ((j + 1) * TILE_SCALE) <= 0 and self.represent_matrix[i][j]:
                     # return from corner
                     self.move_horizontal(1)
                     break
                 # block is on and is out of right screen bounds
-                if self.x + ((j + 1) * BLOCK_SCALE) >= WINDOW_SCALE[0] and self.represent_matrix[i][j]:
+                if self.x + ((j + 1) * TILE_SCALE) >= WINDOW_SCALE[0] and self.represent_matrix[i][j]:
                     # return from corner
                     self.move_horizontal(-1)
                     break
@@ -147,7 +162,7 @@ class Tetron:
         represent_matrix_temp = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
         for i in range(LEN):
             for j in range(LEN):
-                represent_matrix_temp[j][i] = self.represent_matrix[LEN-i-1][j]
+                represent_matrix_temp[LEN-j-1][i] = self.represent_matrix[i][j]
 
         self.represent_matrix = represent_matrix_temp.copy()
         
@@ -168,36 +183,42 @@ class Tetron:
 class Block_Stack:
     def __init__(self):
         self.stack : list[list[Block]] = []
+        self.rows_to_clear = []
     
     def add_block(self, block : Block):
         block_level = (WINDOW_SCALE[1] - block.y) // TILE_SCALE - 1
-        print(block_level, ' ')
 
         while len(self.stack) < block_level + 1:
             self.stack.append([])
         self.stack[block_level].append(block)
     
-    def clear_line(self, level_index : int):
+    def clear_line(self):
+        level_index = self.rows_to_clear.pop()
+        sleep(0.3)
+        
         # drop down all upper levels
         for upper_level_index in range(level_index + 1, len(self.stack)):
             for block in self.stack[upper_level_index]:
                 block.move_down()
         
         self.stack.pop(level_index)
-
-    def check_for_clears(self):
-        for i in range(len(self.stack)):
-            self.check_for_clear()
-
+    
+    # returns number of clears
     def check_for_clear(self):
+        clear_count = 0
         row_len_list = []
         for level_index in range(len(self.stack)):
             row_len_list.append(len(self.stack[level_index]))
             if len(self.stack[level_index]) == WINDOW_SCALE[0] // TILE_SCALE:
                 print('line clear ', level_index)
-                self.clear_line(level_index)
-                return
-        print(row_len_list)
+                self.rows_to_clear.append(level_index)
+
+                for block in self.stack[level_index]:
+                    block.color = WHITE
+
+                clear_count += 1
+        return clear_count
+
     
     def get_block_list(self):
         block_list = []
@@ -210,18 +231,27 @@ class Grid:
     def __init__(self):
         self.currentTetron = Tetron_L()
         self.block_stack : Block_Stack = Block_Stack()
+        self.clear_row_call_count = 0
     
+    def move_tetron_horizontally(self, direction):
+        self.currentTetron.move_horizontal(direction, self.block_stack.get_block_list())
+
     def update_grid(self):
+        update(self.currentTetron, self.block_stack.get_block_list())
+
         self.currentTetron.move_down()
         
+        while(self.clear_row_call_count):
+            self.block_stack.clear_line()
+            self.clear_row_call_count -= 1
+
         if self.currentTetron.check_vertical_collsion(self.block_stack.get_block_list()):
             self.place_tetron()
         
-        update(self.currentTetron, self.block_stack.get_block_list())
 
     def instantiate_new_tetron(self):
         type_list = [Tetron_L, Tetron_T, Tetron_I, Tetron_O, Tetron_X, Tetron_Y]        
-        self.currentTetron = type_list[randint(2,2)]()
+        self.currentTetron = type_list[randint(0,2)]()
 
     def place_tetron(self):
         # save last tetron as placed block
@@ -231,12 +261,11 @@ class Grid:
         del self.currentTetron
 
         self.instantiate_new_tetron()
-        self.block_stack.check_for_clears()
+        self.clear_row_call_count = self.block_stack.check_for_clear()
 
         # increase game speed
         global VERTICAL_SPEED
         # VERTICAL_SPEED *= 1.1
-
 
 class Tetron_L(Tetron):
     def __init__(self):
@@ -307,9 +336,9 @@ def main():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RIGHT:
-                    grid.currentTetron.move_horizontal(1)
+                    grid.move_tetron_horizontally(1)
                 if event.key == pygame.K_LEFT:
-                    grid.currentTetron.move_horizontal(-1)
+                    grid.move_tetron_horizontally(-1)
                 if event.key == pygame.K_DOWN:
                     grid.currentTetron.rotate()
                 if event.key == pygame.K_ESCAPE:
