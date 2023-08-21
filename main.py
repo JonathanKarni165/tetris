@@ -136,8 +136,15 @@ class Tetron:
                 if my_block.position_overlap(grid_block):
                     self.move_horizontal(-direction, grid_blocks)
                     return
+    
+    # rotate back tetron if collided with grid
+    def rotate_grid_constraint(self, grid_blocks):
+        for my_block in self.block_list:
+            for grid_block in grid_blocks:
+                if my_block.position_overlap(grid_block):
+                    self.rotate(grid_blocks)
+                    return
                 
-
     def check_vertical_collsion(self, blocks : list[Block]):
 
         # collision with blocks 
@@ -151,7 +158,7 @@ class Tetron:
                 if my_block.y == 480:
                     return True
                 
-    def rotate(self):
+    def rotate(self, grid_blocks=None):
         represent_matrix_temp = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
         for i in range(LEN):
             for j in range(LEN):
@@ -172,8 +179,10 @@ class Tetron:
                     self.ghost_list[ghost_index].x = self.x + (i * TILE_SCALE)
                     self.ghost_list[ghost_index].y = self.y + (j * TILE_SCALE)
                     ghost_index += 1
-        self.screen_constraint()
 
+        self.screen_constraint()
+        if grid_blocks is not None:
+            self.rotate_grid_constraint(grid_blocks)
           
 class Block_Stack:
     def __init__(self):
@@ -230,6 +239,9 @@ class Grid:
     
     def move_tetron_horizontally(self, direction):
         self.currentTetron.move_horizontal(direction, self.block_stack.get_block_list())
+
+    def rotate_tetron(self):
+        self.currentTetron.rotate(self.block_stack.get_block_list())
 
     def update_grid(self):
         update(self.currentTetron, self.block_stack.get_block_list())
@@ -335,7 +347,7 @@ def main():
                 if event.key == pygame.K_LEFT:
                     grid.move_tetron_horizontally(-1)
                 if event.key == pygame.K_DOWN:
-                    grid.currentTetron.rotate()
+                    grid.rotate_tetron()
                 if event.key == pygame.K_ESCAPE:
                     pause = not pause
             
