@@ -20,7 +20,7 @@ DELTA_TIME = 1 / FPS
 HORIZONTAL_DELAY_FRAMES = 5
 
 HORIZONTAL_SPEED = 1
-VERTICAL_SPEED = 1.0
+VERTICAL_SPEED = 1
 # starts from zero, increasing each row clear
 VERTICAL_SPEED_BONUS = 0.0
 # add to bonus each clear
@@ -35,14 +35,20 @@ ROTATE_PLACE_TETRON_INCREMENT = 0.4
 # tetron representing matrix is 4X4
 TETRON_MATRIX_DIMENSIONS = 4
 
+TETRON_KINDS = 6
+
 WHITE = (255,255,255)
 BLACK = (0,0,0)
 
 SCORING_REWARDS = (40,100,300,1200)
 
-
-pygame.init()
-pygame.font.init()
+#extra options constants
+WIDE_WINDOW_SCALE = (600, 600)
+FAST_VERTICAL_SPEED = 3
+FAST_VERTICAL_SPEED_FAST_FORWARD = 8
+FAST_VERTICAL_SPEED_INCREMENT = 0.2
+MORE_SHAPES_TETRON_KINDS = 10
+HARD_SHPES_TETRON_KINDS = 14
 
 screen = pygame.display.set_mode(WINDOW_SCALE)
 
@@ -394,8 +400,8 @@ class Game:
             self.place_tetron_phase = False
 
     def instantiate_new_tetron(self):
-        type_list = [Tetron_L0, Tetron_L1, Tetron_I, Tetron_O, Tetron_T, Tetron_Z0, Tetron_Z1, Tetron_J, Tetron_X, Tetron_U]        
-        self.current_tetron = type_list[randint(0,6)]()
+        type_list = [Tetron_L0, Tetron_L1, Tetron_I, Tetron_O, Tetron_T, Tetron_Z0, Tetron_Z1, Tetron_J, Tetron_U, Tetron_L2, Tetron_L3, Tetron_Z2, Tetron_Z3, Tetron_X, Tetron_Y]        
+        self.current_tetron = type_list[randint(0,TETRON_KINDS)]()
 
     def try_to_place_tetron(self):
         # each frame decrease delay by the time between frames 
@@ -462,7 +468,13 @@ class Tetron_Z1(Tetron):
 class Tetron_X(Tetron):
     def __init__(self):
         represent_matrix = [[0,1,0,1], [0,0,1,0], [0,1,0,1], [0,0,0,0]]
-        color = (49, 212, 60)
+        color = (163, 49, 212)
+        super().__init__(represent_matrix, color)
+
+class Tetron_Y(Tetron):
+    def __init__(self):
+        represent_matrix = [[0,0,0,0], [0,0,1,0], [0,1,1,1], [0,1,0,1]]
+        color = (163, 49, 212)
         super().__init__(represent_matrix, color)
 
 class Tetron_U(Tetron):
@@ -471,9 +483,33 @@ class Tetron_U(Tetron):
         color = (212, 49, 147)
         super().__init__(represent_matrix, color)
 
+class Tetron_L2(Tetron):
+    def __init__(self):
+        represent_matrix = [[0,1,0,0], [0,1,0,0], [0,1,1,1], [0,0,0,0]]
+        color = (194, 245, 66)
+        super().__init__(represent_matrix, color)
+
+class Tetron_L3(Tetron):
+    def __init__(self):
+        represent_matrix = [[0,0,0,0], [0,1,1,1], [0,1,0,0], [0,1,0,0]]
+        color = (194, 245, 66)
+        super().__init__(represent_matrix, color)
+
+class Tetron_Z2(Tetron):
+    def __init__(self):
+        represent_matrix = [[0,1,0,0], [0,1,1,0], [0,0,1,1], [0,0,0,0]]
+        color = (230, 175, 55)
+        super().__init__(represent_matrix, color)
+
+class Tetron_Z3(Tetron):
+    def __init__(self):
+        represent_matrix = [[0,0,1,0], [0,1,1,0], [1,1,0,0], [0,0,0,0]]
+        color = (230, 175, 55)
+        super().__init__(represent_matrix, color)
+
 class Tetron_J(Tetron):
     def __init__(self):
-        represent_matrix = [[0,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,0]]
+        represent_matrix = [[0,0,0,0], [0,1,1,0], [0,0,1,0], [0,0,0,0]]
         color = (212, 49, 49)
         super().__init__(represent_matrix, color)
                     
@@ -504,7 +540,58 @@ game : Game = None
 score = 0
 display_text_queue = []
 
+def choose_options():
+    options = '''
+    *******************
+    --WELCOME TO TETRIS--
+    CHOOSE GAME OPTION
+    
+    INSERT A NUMBER TO CHOOSE AN OPTION
+    AND THEN ENTER TO START THE GAME
+
+    1 : CLASSIC
+    2 : WIDE SCREEN
+    3 : FAST
+    4 : MORE SHAPES
+    5 : ULTRA HARD SHAPES
+    6 : FAST + MORE SHAPES
+    7 : WIDE SCREEN + HARD SHAPES
+    8 : IMPOSSIBLE (FAST + ULTRA HARD SHAPES)
+    ******************\n\n
+    '''
+    print(options)
+    option = int(input())
+
+    global screen, WINDOW_SCALE, VERTICAL_SPEED_BONUS, VERTICAL_SPEED_FAST_FORWARD, VERTICAL_SPEED_INCREMENT, TETRON_KINDS, VERTICAL_SPEED, ROWS, COLLUMNS
+    if option is 1:
+        return
+    # wide screen
+    if (option is 2) or (option is 7):
+        WINDOW_SCALE = WIDE_WINDOW_SCALE
+        ROWS = WINDOW_SCALE[1] // TILE_SCALE
+        COLLUMNS = WINDOW_SCALE[0] // TILE_SCALE
+        screen = pygame.display.set_mode(WINDOW_SCALE)
+    # fast
+    if (option is 3) or (option is 6) or (option is 8):
+        VERTICAL_SPEED_BONUS = FAST_VERTICAL_SPEED
+        VERTICAL_SPEED = VERTICAL_SPEED + FAST_VERTICAL_SPEED
+        VERTICAL_SPEED_FAST_FORWARD = FAST_VERTICAL_SPEED_FAST_FORWARD
+        VERTICAL_SPEED_INCREMENT = FAST_VERTICAL_SPEED_INCREMENT
+    # more shapes
+    if (option is 4) or (option is 6):
+        TETRON_KINDS = MORE_SHAPES_TETRON_KINDS
+    # more hard shapes
+    if (option is 5) or (option is 7) or (option is 8):
+        TETRON_KINDS = HARD_SHPES_TETRON_KINDS
+
+
 def main():
+    # set options
+    choose_options()
+        
+    pygame.init()
+    pygame.font.init()
+
     run = True
     is_right_down = False
     is_left_down = False
