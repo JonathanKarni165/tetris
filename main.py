@@ -563,25 +563,25 @@ def choose_options():
     option = int(input())
 
     global screen, WINDOW_SCALE, VERTICAL_SPEED_BONUS, VERTICAL_SPEED_FAST_FORWARD, VERTICAL_SPEED_INCREMENT, TETRON_KINDS, VERTICAL_SPEED, ROWS, COLLUMNS
-    if option is 1:
+    if option == 1:
         return
     # wide screen
-    if (option is 2) or (option is 7):
+    if (option == 2) or (option == 7):
         WINDOW_SCALE = WIDE_WINDOW_SCALE
         ROWS = WINDOW_SCALE[1] // TILE_SCALE
         COLLUMNS = WINDOW_SCALE[0] // TILE_SCALE
         screen = pygame.display.set_mode(WINDOW_SCALE)
     # fast
-    if (option is 3) or (option is 6) or (option is 8):
+    if (option == 3) or (option == 6) or (option == 8):
         VERTICAL_SPEED_BONUS = FAST_VERTICAL_SPEED
         VERTICAL_SPEED = VERTICAL_SPEED + FAST_VERTICAL_SPEED
         VERTICAL_SPEED_FAST_FORWARD = FAST_VERTICAL_SPEED_FAST_FORWARD
         VERTICAL_SPEED_INCREMENT = FAST_VERTICAL_SPEED_INCREMENT
     # more shapes
-    if (option is 4) or (option is 6):
+    if (option == 4) or (option == 6):
         TETRON_KINDS = MORE_SHAPES_TETRON_KINDS
     # more hard shapes
-    if (option is 5) or (option is 7) or (option is 8):
+    if (option == 5) or (option == 7) or (option == 8):
         TETRON_KINDS = HARD_SHPES_TETRON_KINDS
 
 
